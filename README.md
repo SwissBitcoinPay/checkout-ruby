@@ -745,6 +745,9 @@ trusted publishing: RubyGems.org exchanges that job's OIDC token for a short-liv
 is stored anywhere. To set it up once: on RubyGems.org, the gem's trusted publisher
 `sattleme/checkout-ruby`, workflow `release.yml`, environment `rubygems`; on GitHub, the environment
 `rubygems` with its required reviewers, and a ruleset that lets only maintainers create `v*` tags.
+The exchange names the RubyGems.org account that owns the gem, by its immutable ID
+(`RUBYGEMS_OWNER` in `release.yml`): RubyGems.org creates the gem, at its first release, only from
+that account's pending trusted publisher, which expires if no release uses it in time.
 
 ## License
 

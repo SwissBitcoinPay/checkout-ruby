@@ -65,7 +65,8 @@ jobs:
     timeout-minutes: 15
     # The protected environment (required reviewers: a maintainer approves each release). The
     # gem's trusted publisher on RubyGems.org is sattleme/checkout-ruby, release.yml, environment
-    # rubygems: RubyGems.org exchanges this job's OIDC token, and no other, for a short-lived key.
+    # rubygems: RubyGems.org exchanges this job's OIDC token, and no other, for a short-lived key
+    # (.github/ci/rubygems_key.rb).
     environment:
       name: rubygems
       url: https://rubygems.org/gems/sattleme-checkout
@@ -88,11 +89,23 @@ jobs:
           ruby-version: "4.0.9"
           bundler-cache: false
       - run: bundle install
+      # The key of trusted publishing, made here rather than by release-gem: RubyGems.org creates a
+      # new gem from a pending trusted publisher only when the exchange names the account that owns
+      # it, which release-gem cannot do yet. See .github/ci/rubygems_key.rb.
+      - name: A short-lived RubyGems.org key for this job, by trusted publishing
+        env:
+          # The RubyGems.org account that owns sattleme-checkout (sattleme), by its immutable ID,
+          # as its Pending Trusted Publishers page gives it: never a handle, which can be renamed
+          # and taken again. Written here, not in a variable, so that it changes only through a
+          # reviewed pull request. RubyGems.org uses it only to create the gem.
+          RUBYGEMS_OWNER: "255463"
+        run: ruby .github/ci/rubygems_key.rb
       # `bundle exec rake release`: builds the gem from this very commit, leaves the tag as it is
-      # (it exists), and pushes the gem with the key of trusted publishing. No wait for the release
-      # to be served (it would run the newest rubygems-await, unpinned), no Sigstore attestation
-      # (it would run sigstore-cli with dependencies resolved at release time, unpinned).
+      # (it exists), and pushes the gem with the key above. No wait for the release to be served (it
+      # would run the newest rubygems-await, unpinned), no Sigstore attestation (it would run
+      # sigstore-cli with dependencies resolved at release time, unpinned).
       - uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
         with:
+          setup-trusted-publisher: "false"
           await-release: "false"
           attestations: "false"
