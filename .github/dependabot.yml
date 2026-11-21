@@ -1,0 +1,38 @@
+# Pull requests that keep the actions and the bundle up to date: one pull request per ecosystem,
+# grouping all its updates. Each waits a week after a release (cooldown): time for a compromised
+# release to be found and yanked before it reaches this repository. Nothing here changes what
+# Bundler writes in Gemfile.lock: the CI installs it as it is (BUNDLE_FROZEN).
+version: 2
+updates:
+  # The SHA-pinned actions of .github/workflows/, in one pull request.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # The gem's dependency and the tools of `bundle exec rake`, pinned exactly in Gemfile.lock, in one
+  # pull request.
+  - package-ecosystem: bundler
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    versioning-strategy: increase
+    groups:
+      bundler:
+        patterns: ["*"]
+    ignore:
+      # Held at the versions Ruby 4.0.9, the CI's, ships (Gemfile): the CI compiles no C extension.
+      # They follow that Ruby (.github/workflows/ci.yml).
+      - dependency-name: json
+      - dependency-name: prism
+      - dependency-name: racc
+      # Minitest 6 depends on prism, a C extension, on every Ruby.
+      - dependency-name: minitest
+        update-types: ["version-update:semver-major"]

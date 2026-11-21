@@ -1,0 +1,105 @@
+name: CI
+
+# Every pull request and every push to main (and the release workflow, before it publishes): the
+# pinned copy of checkout-spec (a test), RuboCop, the tests (the conformance vectors, local relays
+# and fakes: no network) and the package, on every supported version of Ruby.
+#
+# Runners: GitHub-hosted, Ubuntu 24.04. .github/ci/setup.sh takes the prebuilt Rubies of
+# ruby/ruby-builder and runs them from RUNNER_TEMP, with Ubuntu 24.04's libsecp256k1 and the
+# Bundler of Gemfile.lock, each checked against its SHA-256; nothing is compiled
+# (.github/ci/bundle.sh).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Ubuntu 24.04's libsecp256k1 (0.2.0, the oldest version the gem supports), as `apt install
+  # libsecp256k1-1` installs it. Its SHA-256 is the one noble's signed package index lists.
+  SECP256K1_DEB: https://archive.ubuntu.com/ubuntu/pool/universe/libs/libsecp256k1/libsecp256k1-1_0.2.0-2_amd64.deb
+  SECP256K1_DEB_SHA256: 7e435140687357fd20b08da85e390902e5cb504588cf53c57aba0a06ee2d96a4
+  # Gemfile.lock's BUNDLED WITH, and its checksum there.
+  BUNDLER_VERSION: 4.0.24
+  BUNDLER_SHA256: 16ca64e20816a0cf151a948fb141d788602996d2b4d73577b74388fe84fa98bc
+  # Gemfile.lock installed as it is, never changed.
+  BUNDLE_FROZEN: "true"
+
+jobs:
+  checks:
+    name: Spec pin, RuboCop, tests and package (Ruby 4.0)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # The newest Ruby (ruby/ruby-builder's build for Ubuntu 24.04 x64), whose default gems are
+      # RuboCop's json and prism (Gemfile). Never named RUBY: Rake runs ENV["RUBY"] as Ruby itself.
+      RUBY_RELEASE: 4.0.9
+      RUBY_RELEASE_SHA256: 046d1422e1be5575eadd55323c85c3efbeaee8c8e1c1bfccee343e28619cb3b3
+    steps:
+      # RUNNER_TEMP is the job's own directory, emptied at its start and end: temporary files, and
+      # the tools and caches the job installs, go there. Set here: the job's `env` cannot read the
+      # runner context.
+      - name: Use the runner's own temporary directory
+        run: |
+          {
+            echo "TMPDIR=$RUNNER_TEMP"
+            echo "GEM_HOME=$RUNNER_TEMP/gems"
+            echo "GEM_SPEC_CACHE=$RUNNER_TEMP/gem-specs"
+            echo "BUNDLE_USER_HOME=$RUNNER_TEMP/bundle"
+          } >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Ruby ${{ env.RUBY_RELEASE }}, libsecp256k1 and Bundler, their checksums checked
+        run: sh .github/ci/setup.sh "$RUBY_RELEASE" "$RUBY_RELEASE_SHA256"
+      - name: The bundle, compiling nothing
+        run: sh .github/ci/bundle.sh lint
+      # The pinned copy of checkout-spec, RuboCop, the tests, the package: `rake` alone, as locally.
+      - run: bundle exec rake
+
+  tests:
+    name: Tests and package (Ruby ${{ matrix.ruby }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # sattleme-checkout.gemspec: Ruby 3.3 or later. Ruby 4.0 is the checks job's.
+        include:
+          - ruby: 3.3.13
+            sha256: 5daba6f968ccfb3c6701c5eb8afe946140af47dd621669baf32861b004bfacaf
+          - ruby: 3.4.12
+            sha256: c711e610c39b1e341138e78a2adeecd378e7b4ded326ae8ff601d3ea29443f2b
+    env:
+      # Never named RUBY: Rake runs ENV["RUBY"] as Ruby itself.
+      RUBY_RELEASE: ${{ matrix.ruby }}
+      RUBY_RELEASE_SHA256: ${{ matrix.sha256 }}
+      # RuboCop runs in the checks job only.
+      BUNDLE_WITHOUT: lint
+    steps:
+      # RUNNER_TEMP is the job's own directory, emptied at its start and end: temporary files, and
+      # the tools and caches the job installs, go there. Set here: the job's `env` cannot read the
+      # runner context.
+      - name: Use the runner's own temporary directory
+        run: |
+          {
+            echo "TMPDIR=$RUNNER_TEMP"
+            echo "GEM_HOME=$RUNNER_TEMP/gems"
+            echo "GEM_SPEC_CACHE=$RUNNER_TEMP/gem-specs"
+            echo "BUNDLE_USER_HOME=$RUNNER_TEMP/bundle"
+          } >> "$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Ruby ${{ env.RUBY_RELEASE }}, libsecp256k1 and Bundler, their checksums checked
+        run: sh .github/ci/setup.sh "$RUBY_RELEASE" "$RUBY_RELEASE_SHA256"
+      - name: The bundle, compiling nothing
+        run: sh .github/ci/bundle.sh tests
+      - run: bundle exec rake spec:check test build:check

@@ -1,0 +1,70 @@
+# RuboCop (format and lint), pinned in the Gemfile: `bundle exec rake rubocop`, or
+# `bundle exec rubocop -a` to correct what it can.
+plugins:
+  - rubocop-minitest
+
+AllCops:
+  TargetRubyVersion: 3.3
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    # The pinned copy of the specification is never edited (spec/PIN.json).
+    - "spec/**/*"
+    - "pkg/**/*"
+    - "tmp/**/*"
+    - "vendor/**/*"
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+Layout/LineLength:
+  Max: 120
+  # A test's title is the reference implementation's, whole.
+  AllowedPatterns:
+    - '\A\s*test "'
+
+# The protocol's steps are written as SPEC.md lists them, each in one method, as in the other
+# implementations: the limits are those of the longest steps, so that a longer one is noticed.
+Metrics/MethodLength:
+  CountAsOne: [array, hash, heredoc, method_call]
+  Max: 75
+Metrics/AbcSize:
+  Max: 75
+Metrics/CyclomaticComplexity:
+  Max: 26
+Metrics/PerceivedComplexity:
+  Max: 27
+Metrics/ClassLength:
+  CountAsOne: [array, hash, heredoc, method_call]
+  Max: 700
+Metrics/ModuleLength:
+  CountAsOne: [array, hash, heredoc, method_call]
+  Max: 240
+Metrics/BlockLength:
+  CountAsOne: [array, hash, heredoc, method_call]
+  Max: 45
+Metrics/ParameterLists:
+  Max: 11
+
+# Short names that the specification uses: `d` (a record's address), `at`, `ok`, `tx` (a
+# transaction), `of` (whose a witness is).
+Naming/MethodParameterName:
+  AllowedNames: [a, b, d, at, id, io, ok, of, to, tx, x]
+
+# The tests mirror the reference implementation's, one for one: long, many assertions each.
+Minitest/MultipleAssertions:
+  Enabled: false
+Minitest/EmptyLineBeforeAssertionMethods:
+  Enabled: false
+# Tests are defined with `test "what holds" do` (test/test_helper.rb); helpers may assert.
+Minitest/TestMethodName:
+  Enabled: false
+# A double is compared exactly: JSON's reading is correctly rounded, never merely near.
+Minitest/AssertInDelta:
+  Enabled: false
+Metrics:
+  Exclude:
+    - "test/**/*"

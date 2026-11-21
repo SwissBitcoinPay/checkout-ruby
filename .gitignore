@@ -1,0 +1,7 @@
+# Bundler: the gems of the lockfile, installed in the repository (CI) or elsewhere.
+/.bundle/
+/vendor/bundle/
+# What `rake build` makes, and the libsecp256k1 `rake secp256k1` builds for development.
+/pkg/
+/tmp/
+*.gem
