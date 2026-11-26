@@ -84,7 +84,7 @@ jobs:
           persist-credentials: false
       # On a GitHub-hosted runner, setup-ruby's prebuilt Ruby where it was built for. The Bundler of
       # Gemfile.lock's BUNDLED WITH; no cache in a release.
-      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+      - uses: ruby/setup-ruby@f9c4492e86def3e644ab32a0ef185eda5b0c20d0 # v1.342.0
         with:
           ruby-version: "4.0.9"
           bundler-cache: false
@@ -104,7 +104,7 @@ jobs:
       # (it exists), and pushes the gem with the key above. No wait for the release to be served (it
       # would run the newest rubygems-await, unpinned), no Sigstore attestation (it would run
       # sigstore-cli with dependencies resolved at release time, unpinned).
-      - uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b # v1.4.1
+      - uses: rubygems/release-gem@5c53f5308233b7c0f47411f0471b3faae6fa57b2 # v1.4.2
         with:
           setup-trusted-publisher: "false"
           await-release: "false"
