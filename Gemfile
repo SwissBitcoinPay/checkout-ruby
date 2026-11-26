@@ -18,12 +18,12 @@ end
 
 # RuboCop, in a group of its own: the CI's test jobs install without it (BUNDLE_WITHOUT=lint).
 group :lint do
-  gem "rubocop", "1.92.2"
+  gem "rubocop", "1.92.3"
   gem "rubocop-minitest", "0.41.0"
   # RuboCop's dependencies with a C extension, at the versions Ruby 4.0.9 ships (json and prism
   # its default gems, racc a bundled one): on Ruby 4.0.9, the CI's lint job compiles nothing.
   gem "json", "2.18.0"
-  gem "parser", "3.3.13.0"
+  gem "parser", "3.3.14.0"
   gem "prism", "1.8.2"
   gem "racc", "1.8.1"
 end
